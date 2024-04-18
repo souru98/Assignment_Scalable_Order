@@ -9,13 +9,13 @@ db = SQLAlchemy(app)
 
 
 def get_book(book_id):
-    response = requests.get(f'http://127.0.0.1:4000/books/{book_id}')
+    response = requests.get(f'http://127.0.0.1:4000/book/availability/{book_id}')
     return response.json()
 
 
-# def get_user(user_id):
-#     response = requests.get(f'http://order-service:5000/books/{user_id}')
-#     return response.json()
+def get_user(user_id):
+    response = requests.get(f'http://127.0.0.1:8081/users/{user_id}')
+    return response.json()
 
 
 class Order(db.Model):
@@ -117,13 +117,15 @@ with app.app_context():
     db.create_all()
 
 
-def decrease_book_count(book_id):
-    response = requests.put(f'http://books-service:4000/book/decrease/{book_id}')
+def decrease_book_count(book_id, quantity):
+    data = {'quantity': quantity}
+    response = requests.put(f'http://127.0.0.1:4000/book/decrease/{book_id}', json=data)
     return response.status_code == 200
 
 
-def increase_book_count(book_id):
-    response = requests.put(f'http://books-service:4000/books/increase/{book_id}')
+def increase_book_count(book_id, quantity):
+    data = {'quantity': quantity}
+    response = requests.put(f'http://127.0.0.1:4000/book/increase/{book_id}', json=data)
     return response.status_code == 200
 
 
@@ -138,10 +140,10 @@ def place_order():
     try:
         data = request.get_json()
         book = get_book(data['book_id'])
-        # user = get_user(data['user_id'])
-        if book['quantity'] > 0 and decrease_book_count(data['book_id']):
-                # and user is not None:
-            order = Order(book_id=data['book_id'], user_id=data['user_id'])
+        user = get_user(data['user_id'])
+
+        if book['quantity'] > 0 and decrease_book_count(data['book_id'], data['quantity']) and user is not None:
+            order = Order(book_id=data['book_id'], user_id=data['user_id'], date_issued=db.func.current_timestamp())
             db.session.add(order)
             db.session.commit()
             return make_response(jsonify({'message': 'Order placed successfully'}), 200)
@@ -152,11 +154,13 @@ def place_order():
 @app.route('/orders/<int:order_id>', methods=['PUT'])
 def return_book(order_id):
     try:
-        order = Order.query.get(order_id)
-        if order and not order.date_returned:
+        data = request.get_json()
+        order = Order.query.filter_by(order_id=order_id).first()
+        if order:
             order.date_returned = db.func.current_timestamp()
             db.session.commit()
-            increase_book_count(order.book_id)
+            increase_book_count(order.book_id, data['quantity'])
+
             return make_response(jsonify({'message': 'Book returned successfully'}), 200)
     except Exception as e:
         return make_response(jsonify({'message': 'oops! something went wrong'}), 500)
@@ -166,7 +170,7 @@ def return_book(order_id):
 def fetch_orders():
     try:
         orders = Order.query.all()
-        return make_response(jsonify([{'id': order.id, 'book_id': order.book_id, 'user_id': order.user_id}
+        return make_response(jsonify([{'id': order.order_id, 'book_id': order.book_id, 'user_id': order.user_id}
                                       for order in orders]), 200)
     except Exception as e:
         return make_response(jsonify({'message': 'oops! something went wrong'}), 500)
