@@ -30,7 +30,7 @@ This repository contains the code for the Order Service, a part of a microservic
 3. **Install the packages listed in the requirements.txt file**
    pip install -r requirements.txt
 4. **Build and run the Docker container**
-   docker compose up --build flask_product_service_app
+   docker compose up --build flask_order_service_app
 
 
 ## API Endpoints
