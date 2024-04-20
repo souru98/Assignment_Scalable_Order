@@ -18,6 +18,7 @@ This repository contains the code for the Order Service, a part of a microservic
 
 ### Prerequisites
 - Docker
+- MiniKube
 - Python 3.x
 - PostgreSQL
 
@@ -31,6 +32,30 @@ This repository contains the code for the Order Service, a part of a microservic
    pip install -r requirements.txt
 4. **Build and run the Docker container**
    docker compose up --build flask_order_service_app
+
+## Deploying to MiniKube
+
+Follow these steps to deploy your application to MiniKube:
+
+1. **Navigate to Project Directory**: 
+   Open Windows PowerShell and navigate to your project directory using the `cd` command.
+
+2. **Start MiniKube**: 
+   Start your MiniKube cluster with the command `minikube start`.
+
+3. **Set Docker Environment**: 
+   Set up the Docker environment inside MiniKube. Run the following command in PowerShell:
+   ```powershell
+   minikube -p minikube docker-env --shell powershell | Invoke-Expression
+   
+4. **Build Docker Image**
+   docker build -t order_service/flask_api:1.0 .
+   
+5. **Create Kubernetes Deployment**
+   kubectl run order-service-mk --image=order_service/flask_api:1.0 --image-pull-policy=Never --port=3000
+   
+6. **Port Forwarding**
+   kubectl port-forward order-service-mk 8080
 
 
 ## API Endpoints
